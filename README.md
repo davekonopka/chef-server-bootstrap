@@ -13,8 +13,13 @@ Bootstrap a Chef Server from scratch.
 
 ### Generate CloudFormation json
 
-* `python chef-server.py > chef-server.json`
+`python chef-server.py > chef-server.json`
 
 ### Launch CloudFormation stack
 
-* `aws cloudformation create-stack --stack-name chef-server --template-body file://./chef-server.json --parameters ParameterKey=KeyName,ParameterValue=somekey`
+```
+aws cloudformation create-stack \
+  --stack-name chef-server \
+  --template-body file://./chef-server.json \
+  --parameters ParameterKey=KeyName,ParameterValue=somekey
+```
