@@ -53,7 +53,41 @@
                     }
                 ],
                 "UserData": {
-                    "Fn::Base64": "#!/bin/bash\n\nCHEF_REPO=/tmp/provisioning\nCHEF_CLIENT_VERSION=\"11.18.12\"\n\n# Chef 11 compatible chef-server cookbook url\nCHEF_COOKBOOK_URL=\"https://supermarket.chef.io/cookbooks/chef-server/versions/2.1.6/download\"\n\n# Install Chef Client\ncurl -L https://www.chef.io/chef/install.sh | sudo bash -s -- -v $CHEF_CLIENT_VERSION\n\n# Create required bootstrap dirs/files\nsudo mkdir -p $CHEF_REPO/cache $CHEF_REPO/cookbooks\n\ncat >$CHEF_REPO/first_run.json <<EOL\n{\n  \"chef-server\": {\n    \"version\": \"11.1.6-1\"\n  },\n  \"run_list\": [ \"recipe[chef-server::default]\" ]\n}\nEOL\n\n# Pull down Chef 11 compatible cookbook\nwget -qO- $CHEF_COOKBOOK_URL | sudo tar xvzC $CHEF_REPO/cookbooks\n\ncd $CHEF_REPO\nsudo chef-client -z -j $CHEF_REPO/first_run.json\n"
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash\n",
+                                "\n",
+                                "CHEF_REPO=/tmp/provisioning\n",
+                                "CHEF_CLIENT_VERSION=\"11.18.12\"\n",
+                                "\n",
+                                "# Chef 11 compatible chef-server cookbook url\n",
+                                "CHEF_COOKBOOK_URL=\"https://supermarket.chef.io/cookbooks/chef-server/versions/2.1.6/download\"\n",
+                                "\n",
+                                "# Install Chef Client\n",
+                                "curl -L https://www.chef.io/chef/install.sh | sudo bash -s -- -v $CHEF_CLIENT_VERSION\n",
+                                "\n",
+                                "# Create required bootstrap dirs/files\n",
+                                "sudo mkdir -p $CHEF_REPO/cache $CHEF_REPO/cookbooks\n",
+                                "\n",
+                                "cat >$CHEF_REPO/first_run.json <<EOL\n",
+                                "{\n",
+                                "  \"chef-server\": {\n",
+                                "    \"version\": \"11.1.6-1\"\n",
+                                "  },\n",
+                                "  \"run_list\": [ \"recipe[chef-server::default]\" ]\n",
+                                "}\n",
+                                "EOL\n",
+                                "\n",
+                                "# Pull down Chef 11 compatible cookbook\n",
+                                "wget -qO- $CHEF_COOKBOOK_URL | sudo tar xvzC $CHEF_REPO/cookbooks\n",
+                                "\n",
+                                "cd $CHEF_REPO\n",
+                                "sudo chef-client -z -j $CHEF_REPO/first_run.json\n"
+                            ]
+                        ]
+                    }
                 }
             },
             "Type": "AWS::EC2::Instance"

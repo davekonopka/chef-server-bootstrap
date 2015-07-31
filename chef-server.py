@@ -1,5 +1,5 @@
 import troposphere.ec2 as ec2
-from troposphere import Base64, FindInMap, Parameter, Ref, Template
+from troposphere import Base64, FindInMap, Join, Parameter, Ref, Template
 
 template = Template()
 
@@ -57,7 +57,7 @@ ec2_instance = template.add_resource(ec2.Instance(
     KeyName=Ref(keyname_param),
     InstanceType=Ref("InstanceType"),
     SecurityGroups=[Ref(instance_sg)],
-    UserData=Base64(cloud_init)
+    UserData=Base64(Join("", cloud_init.splitlines(True)))
 ))
 
 print(template.to_json())
