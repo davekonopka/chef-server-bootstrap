@@ -1,24 +1,66 @@
 {
+    "Mappings": {
+        "RegionMap": {
+            "us-east-1": {
+                "AMI": "ami-7be63d10"
+            }
+        }
+    },
+    "Parameters": {
+        "InstanceType": {
+            "AllowedValues": [
+                "m3.medium",
+                "m3.large",
+                "m3.xlarge",
+                "m3.2xlarge",
+                "c1.medium",
+                "c1.xlarge",
+                "cc1.4xlarge",
+                "cc2.8xlarge",
+                "cg1.4xlarge"
+            ],
+            "ConstraintDescription": "Must be a valid, EC2 classic compatible instance type.",
+            "Default": "m3.medium",
+            "Description": "EC2 instance type",
+            "Type": "String"
+        },
+        "KeyName": {
+            "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+            "Type": "String"
+        }
+    },
     "Resources": {
-        "Ec2Instance": {
+        "ChefServerInstance": {
             "Properties": {
-                "ImageId": "ami-7be63d10",
-                "InstanceType": "m3.medium",
-                "KeyName": "experiment_dkonopka.pem",
+                "ImageId": {
+                    "Fn::FindInMap": [
+                        "RegionMap",
+                        {
+                            "Ref": "AWS::Region"
+                        },
+                        "AMI"
+                    ]
+                },
+                "InstanceType": {
+                    "Ref": "InstanceType"
+                },
+                "KeyName": {
+                    "Ref": "KeyName"
+                },
                 "SecurityGroups": [
                     {
                         "Ref": "InstanceSecurityGroup"
                     }
                 ],
                 "UserData": {
-                    "Fn::Base64": "#!/bin/bash\n\nCHEF_REPO=/tmp/provisioning\nCHEF_CLIENT_VERSION=\"11.18.12\"\n\n# Install Chef Client\ncurl -L https://www.chef.io/chef/install.sh | sudo bash -s -- -v $CHEF_CLIENT_VERSION\n\n# Create required bootstrap dirs/files\nsudo mkdir -p $CHEF_REPO/cache $CHEF_REPO/cookbooks\n\n# Pull down Chef 11 compatible cookbook\nwget -qO- https://supermarket.chef.io/cookbooks/chef-server/versions/2.1.6/download | sudo tar xvzC $CHEF_REPO/cookbooks\n\ncd $CHEF_REPO\nsudo chef-client -z -o 'chef-server::default'\n"
+                    "Fn::Base64": "#!/bin/bash\n\nCHEF_REPO=/tmp/provisioning\nCHEF_CLIENT_VERSION=\"11.18.12\"\n\n# Chef 11 compatible chef-server cookbook url\nCHEF_COOKBOOK_URL=\"https://supermarket.chef.io/cookbooks/chef-server/versions/2.1.6/download\"\n\n# Install Chef Client\ncurl -L https://www.chef.io/chef/install.sh | sudo bash -s -- -v $CHEF_CLIENT_VERSION\n\n# Create required bootstrap dirs/files\nsudo mkdir -p $CHEF_REPO/cache $CHEF_REPO/cookbooks\n\ncat >$CHEF_REPO/first_run.json <<EOL\n{\n  \"chef-server\": {\n    \"version\": \"11.1.6-1\"\n  },\n  \"run_list\": [ \"recipe[chef-server::default]\" ]\n}\nEOL\n\n# Pull down Chef 11 compatible cookbook\nwget -qO- $CHEF_COOKBOOK_URL | sudo tar xvzC $CHEF_REPO/cookbooks\n\ncd $CHEF_REPO\nsudo chef-client -z -j $CHEF_REPO/first_run.json\n"
                 }
             },
             "Type": "AWS::EC2::Instance"
         },
         "InstanceSecurityGroup": {
             "Properties": {
-                "GroupDescription": "Enable SSH and HTTP access on the inbound port",
+                "GroupDescription": "Enable SSH access to the world",
                 "SecurityGroupIngress": [
                     {
                         "CidrIp": "0.0.0.0/0",
